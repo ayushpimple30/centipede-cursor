@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wiggly Centipede Cursor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      cursor: none; /* Hide default cursor */
+    }
+    canvas {
+      background: black;
+      display: block;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    const segmentCount = 30;
+    const segments = [];
+    let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+    let angle = 0;
+    let lastMouse = { x: mouse.x, y: mouse.y };
+    let mouseSpeed = 0;
+    let exploded = false;
+
+    for (let i = 0; i < segmentCount; i++) {
+      segments.push({ x: mouse.x, y: mouse.y, dx: 0, dy: 0 });
+    }
+
+    window.addEventListener("mousemove", (e) => {
+      lastMouse = { ...mouse };
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+
+      const dx = mouse.x - lastMouse.x;
+      const dy = mouse.y - lastMouse.y;
+      mouseSpeed = Math.sqrt(dx * dx + dy * dy) / 5;
+    });
+
+    window.addEventListener("click", () => {
+      exploded = true;
+      for (let seg of segments) {
+        seg.dx = (Math.random() - 0.5) * 20;
+        seg.dy = (Math.random() - 0.5) * 20;
+      }
+      setTimeout(() => exploded = false, 500);
+    });
+
+    function drawEyesAndTongue(head) {
+      const size = 10;
+
+      // Eyes
+      ctx.beginPath();
+      ctx.arc(head.x - 4, head.y - 6, 2, 0, Math.PI * 2);
+      ctx.arc(head.x + 4, head.y - 6, 2, 0, Math.PI * 2);
+      ctx.fillStyle = "white";
+      ctx.fill();
+
+      // Tongue flicks every few frames
+      if (Math.floor(Date.now() / 150) % 2 === 0) {
+        ctx.beginPath();
+        ctx.moveTo(head.x, head.y + 5);
+        ctx.lineTo(head.x, head.y + 15);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!exploded) {
+        segments[0].x += (mouse.x - segments[0].x) * 0.2;
+        segments[0].y += (mouse.y - segments[0].y) * 0.2;
+
+        for (let i = 1; i < segments.length; i++) {
+          const prev = segments[i - 1];
+          const curr = segments[i];
+          curr.x += (prev.x - curr.x) * 0.2;
+          curr.y += (prev.y - curr.y) * 0.2;
+        }
+      } else {
+        for (let seg of segments) {
+          seg.x += seg.dx;
+          seg.y += seg.dy;
+        }
+      }
+
+      angle += 0.05 + mouseSpeed * 0.01;
+
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        const size = 8 * ((segments.length - i) / segments.length);
+        const wave = Math.sin(angle + i * 0.5) * 6;
+        const legLength = 10;
+
+        // Glow body
+        ctx.beginPath();
+        ctx.arc(seg.x + wave, seg.y, size, 0, Math.PI * 2);
+        ctx.shadowColor = "lime";
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = "#00ff00";
+        ctx.fill();
+
+        // Legs
+        const legAngle = Math.sin(angle * (1 + mouseSpeed * 0.05) + i) * 0.6;
+
+        ctx.beginPath();
+        ctx.moveTo(seg.x + wave, seg.y);
+        ctx.lineTo(seg.x + wave + Math.cos(legAngle) * legLength, seg.y + Math.sin(legAngle) * legLength);
+        ctx.moveTo(seg.x + wave, seg.y);
+        ctx.lineTo(seg.x + wave - Math.cos(legAngle) * legLength, seg.y + Math.sin(legAngle) * legLength);
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Draw eyes + tongue on the head
+        if (i === 0) drawEyesAndTongue(seg);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
