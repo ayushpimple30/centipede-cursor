@@ -42,3 +42,4 @@ A fun and interactive JavaScript project that replaces the default mouse cursor 
    ```bash
    git clone https://github.com/ayushpimple30/centipede-cursor.git
    cd centipede-cursor
+
